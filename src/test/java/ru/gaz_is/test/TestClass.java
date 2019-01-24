@@ -1,39 +1,53 @@
 package ru.gaz_is.test;
 
 import org.junit.*;
-import ru.gaz_is.dbService.DBService;
-import ru.gaz_is.dbService.DBServiceImpl;
-import ru.gaz_is.test.helper.H2ConnectionHelper;
+import org.junit.runner.RunWith;
+import org.mockito.InjectMocks;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 
+import org.mockito.Mock;
+import ru.gaz_is.dbService.UserDAO;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@RunWith(MockitoJUnitRunner.class)
 public class TestClass {
+
+    @Mock
+    private Connection connection;
+
+    @Mock
+    private PreparedStatement preparedStatement;
+
+    @Mock
+    private ResultSet resultSet;
+
+    @InjectMocks
+    private UserDAO userDAO;
 
     @Before
     public void before() throws SQLException {
-        Connection connection = H2ConnectionHelper.getConnection();
-        try (Statement statement = connection.createStatement()) {
-            statement.executeUpdate("drop table Users");
-            statement.executeUpdate("create table Users (name varchar(256), surname varchar(256))");
-            statement.executeUpdate("insert into Users (name, surname) values ('Name1', 'Surname1')");
-            statement.executeUpdate("insert into Users (name, surname) values ('Name2', 'Surname2')");
-        }
-        connection.close();
+        when(connection.prepareStatement(any(String.class))).thenReturn(preparedStatement);
+        when(resultSet.next()).thenReturn(true).thenReturn(false);
+        when(resultSet.getString("name")).thenReturn("Name1");
+        when(resultSet.getString("surname")).thenReturn("Surname1");
+        when(preparedStatement.executeQuery()).thenReturn(resultSet);
     }
 
     @Test
-    public void testDB() throws Exception {
-        Connection connection = H2ConnectionHelper.getConnection();
-        try (DBService dbService = new DBServiceImpl(connection)) {
-            dbService.changeSurname("Name1", "Surname3");
-            String loadedUser = dbService.read("Name1");
-            String user = "Name='Name1', surname='Surname3'";
-            Assert.assertNotNull(loadedUser);
-            Assert.assertEquals(loadedUser, user);
-        }
-        connection.close();
+    public void loadTest() {
+        String loadedUser = userDAO.load("Name1");
+        Assert.assertEquals("Name='Name1', surname='Surname1'", loadedUser);
+    }
+
+    @Test
+    public void updateTest() throws SQLException {
+        userDAO.update("Name1", "Surname3");
+        verify(preparedStatement).executeUpdate();
     }
 }
 

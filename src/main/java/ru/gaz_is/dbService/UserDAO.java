@@ -12,10 +12,10 @@ public class UserDAO {
     }
 
     public String load(String name) {
-        String result = "User isn't found";
-        try (PreparedStatement statement = connection.prepareStatement(SELECT_USER)) {
-            statement.setString(1, name);
-            ResultSet resultSet = statement.executeQuery();
+        String result = "User isn't found1";
+        try (PreparedStatement preparedStatement = connection.prepareStatement(SELECT_USER)) {
+            preparedStatement.setString(1, name);
+            ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
                 String userName = resultSet.getString("name");
                 String userSurname = resultSet.getString("surname");
